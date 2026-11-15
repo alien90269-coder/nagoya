@@ -1,17 +1,31 @@
 import React, { useState, useEffect } from 'react';
 
 export default function App() {
-  // 1. 匯率與夥伴設定 (預設夥伴改為：賢、哲、媽、媃)
-  const [jpyRate, setJpyRate] = useState(0.21);
-  const [usdRate, setUsdRate] = useState(32.5);
-  const [members, setMembers] = useState(['賢', '哲', '媽', '媃']);
-  const [newMemberName, setNewMemberName] = useState('');
+  // 1. 從 localStorage 讀取初始資料，若沒有則使用預設值
+  const [jpyRate, setJpyRate] = useState(() => {
+    const saved = localStorage.getItem('trip_jpyRate');
+    return saved !== null ? parseFloat(saved) : 0.21;
+  });
 
-  // 2. 消費紀錄 (支援多幣別: JPY, USD, TWD)
-  const [expenses, setExpenses] = useState([
-    { id: 1, title: '門票', currency: 'JPY', amount: 5000, paidBy: '賢', splitAmong: ['賢', '哲', '媽', '媃'] },
-    { id: 2, title: '晚餐', currency: 'TWD', amount: 2000, paidBy: '哲', splitAmong: ['賢', '哲', '媽', '媃'] }
-  ]);
+  const [usdRate, setUsdRate] = useState(() => {
+    const saved = localStorage.getItem('trip_usdRate');
+    return saved !== null ? parseFloat(saved) : 32.5;
+  });
+
+  const [members, setMembers] = useState(() => {
+    const saved = localStorage.getItem('trip_members');
+    return saved ? JSON.parse(saved) : ['賢', '哲', '媽', '媃'];
+  });
+
+  const [expenses, setExpenses] = useState(() => {
+    const saved = localStorage.getItem('trip_expenses');
+    return saved ? JSON.parse(saved) : [
+      { id: 1, title: '門票', currency: 'JPY', amount: 5000, paidBy: '賢', splitAmong: ['賢', '哲', '媽', '媃'] },
+      { id: 2, title: '晚餐', currency: 'TWD', amount: 2000, paidBy: '哲', splitAmong: ['賢', '哲', '媽', '媃'] }
+    ];
+  });
+
+  const [newMemberName, setNewMemberName] = useState('');
 
   // 新增消費表單狀態
   const [title, setTitle] = useState('');
@@ -19,6 +33,23 @@ export default function App() {
   const [amount, setAmount] = useState('');
   const [paidBy, setPaidBy] = useState('賢');
   const [splitAmong, setSplitAmong] = useState(['賢', '哲', '媽', '媃']);
+
+  // 當資料改變時，自動同步儲存到 localStorage
+  useEffect(() => {
+    localStorage.setItem('trip_jpyRate', jpyRate);
+  }, [jpyRate]);
+
+  useEffect(() => {
+    localStorage.setItem('trip_usdRate', usdRate);
+  }, [usdRate]);
+
+  useEffect(() => {
+    localStorage.setItem('trip_members', JSON.stringify(members));
+  }, [members]);
+
+  useEffect(() => {
+    localStorage.setItem('trip_expenses', JSON.stringify(expenses));
+  }, [expenses]);
 
   // 新增夥伴
   const addMember = () => {
@@ -90,8 +121,8 @@ export default function App() {
 
   // 3. 計算總花費與結算
   let totalTWD = 0;
-  const paidMap = {}; // 誰實際付了多少錢 (TWD)
-  const shouldPayMap = {}; // 誰應該負擔多少錢 (TWD)
+  const paidMap = {}; 
+  const shouldPayMap = {}; 
 
   members.forEach(m => {
     paidMap[m] = 0;
@@ -117,15 +148,13 @@ export default function App() {
     }
   });
 
-  // 淨額：正數代表別人欠他（多付了），負數代表他欠別人（付太少）
   const balanceMap = {};
   members.forEach(m => {
     balanceMap[m] = paidMap[m] - shouldPayMap[m];
   });
 
-  // 最佳債務結算演算法 (簡化為最小轉帳次數)
-  const debtors = []; // 負數 (欠錢的人)
-  const creditors = []; // 正數 (應收錢的人)
+  const debtors = []; 
+  const creditors = []; 
 
   members.forEach(m => {
     const bal = balanceMap[m];
@@ -414,7 +443,6 @@ const styles = {
     backgroundColor: '#fff',
     color: '#000'
   },
-  // 關鍵修復：為下拉選單與內部選項強制設定高對比背景與文字顏色
   select: {
     padding: '10px',
     borderRadius: '6px',
